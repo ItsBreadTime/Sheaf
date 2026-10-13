@@ -1,0 +1,55 @@
+{
+  "name": "sheaf",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "sheaf-benchmark": "./scripts/benchmark-cli.mjs"
+  },
+  "engines": {
+    "node": ">=22.6"
+  },
+  "description": "Privacy-conscious AI tab organization for Chromium browsers.",
+  "scripts": {
+    "dev": "vite",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src tests scripts",
+    "lint:css": "node scripts/css-type-scale-guard.mjs",
+    "test": "vitest run",
+    "test:manual": "vitest run --config vitest.manual.config.ts",
+    "test:watch": "vitest",
+    "test:action-popup": "node scripts/action-popup-size-smoke.mjs",
+    "test:popup": "node scripts/popup-smoke.mjs",
+    "test:settings-direct": "node scripts/settings-direct-smoke.mjs",
+    "test:setup": "node scripts/setup-smoke.mjs",
+    "test:group-manager-ui": "node scripts/group-manager-ui-smoke.mjs",
+    "test:tab-search-ui": "node scripts/tab-search-ui-smoke.mjs",
+    "benchmark": "node scripts/benchmark-cli.mjs",
+    "build": "npm run typecheck && vite build",
+    "build:dev": "npm run typecheck && vite build --mode development",
+    "check": "npm run lint && npm run lint:css && npm run test && npm run build && npm run check:bundle",
+    "check:bundle": "node scripts/bundle-budget.mjs",
+    "test:stash-ui": "node scripts/stash-ui-smoke.mjs",
+    "test:auto-file": "node scripts/auto-filing-smoke.mjs",
+    "test:finder": "node scripts/finder-smoke.mjs",
+    "test:smokes": "node scripts/run-smokes.mjs",
+    "check:release": "npm run check && npm run test:smokes"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.1.32",
+    "eslint": "^10.11.0",
+    "fake-indexeddb": "^6.2.5",
+    "globals": "^17.12.0",
+    "happy-dom": "^20.14.5",
+    "playwright-core": "^1.61.1",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.70.1",
+    "vite": "^8.0.10",
+    "vitest": "^4.0.18"
+  },
+  "dependencies": {
+    "tldts": "^7.4.8"
+  },
+  "license": "MIT",
+  "author": "BreadTM"
+}

@@ -1,0 +1,43 @@
+# Dependencies and build output
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+.vite/
+
+# Local benchmark / evaluation output (the CLI and config generators write to the repo root)
+/benchmark-results.json
+/organizer-*-benchmark-results.json
+/organizer-*-benchmark.json
+/*.jsonl
+
+# Test runner output
+test-results/
+playwright-report/
+
+# Local-only material: benchmark case data and evaluation corpora live in
+# private/ and are not part of the repository.
+private/
+
+# Local development notes
+docs/
+DESIGN.md
+PRODUCT.md
+
+# Secrets and local config
+.env
+.env.*
+!.env.example
+.claude/settings.local.json
+
+# Tool state
+.openchrome/
+.impeccable/
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+*.log
+*.swp
+.idea/
+.vscode/

@@ -1,0 +1,63 @@
+{
+  "task": "Organize a set of browser tabs into useful workstream groups.",
+  "rubric": "Score correctness, completeness, consistency, and usefulness. Penalize unsupported assumptions, missing requirements, and unclear output.",
+  "passScore": 70,
+  "datasetCount": 2,
+  "casesPerDataset": 5,
+  "runsPerCase": 3,
+  "prompts": [
+    {
+      "id": "workstream",
+      "name": "Workstream organizer",
+      "text": "Organize the input into coherent, useful workstream groups. Be conservative with ambiguous items and explain the result clearly."
+    },
+    {
+      "id": "domain",
+      "name": "Domain-first baseline",
+      "text": "Organize the input primarily by website or domain. Keep ambiguous items separate and return a concise, structured answer."
+    }
+  ],
+  "candidates": [
+    {
+      "name": "OpenAI candidate",
+      "promptId": "workstream",
+      "provider": {
+        "name": "OpenAI",
+        "origin": "https://api.openai.com",
+        "endpointPath": "/v1/chat/completions",
+        "model": "YOUR_MODEL",
+        "apiKeyEnv": "OPENAI_API_KEY",
+        "temperature": 0.2
+      }
+    },
+    {
+      "name": "OpenRouter candidate",
+      "promptId": "domain",
+      "provider": {
+        "name": "OpenRouter",
+        "origin": "https://openrouter.ai",
+        "endpointPath": "/api/v1/chat/completions",
+        "model": "YOUR_PROVIDER/YOUR_MODEL",
+        "apiKeyEnv": "OPENROUTER_API_KEY",
+        "temperature": 0.7,
+        "extraBody": { "seed": 7 }
+      }
+    }
+  ],
+  "generator": {
+    "name": "Synthetic generator",
+    "origin": "https://api.openai.com",
+    "endpointPath": "/v1/chat/completions",
+    "model": "YOUR_GENERATOR_MODEL",
+    "apiKeyEnv": "OPENAI_API_KEY",
+    "temperature": 1
+  },
+  "grader": {
+    "name": "Independent grader",
+    "origin": "https://api.openai.com",
+    "endpointPath": "/v1/chat/completions",
+    "model": "YOUR_GRADER_MODEL",
+    "apiKeyEnv": "OPENAI_API_KEY",
+    "temperature": 0
+  }
+}

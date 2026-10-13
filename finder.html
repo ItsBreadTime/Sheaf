@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Find a tab</title>
+  </head>
+  <body>
+    <main class="finder">
+      <div class="finder__bar">
+        <svg class="finder__icon" viewBox="0 0 20 20" aria-hidden="true">
+          <circle cx="8.5" cy="8.5" r="5.75" />
+          <path d="m13 13 4.5 4.5" />
+        </svg>
+        <input
+          id="finder-input"
+          class="finder__input"
+          type="text"
+          role="combobox"
+          aria-expanded="false"
+          aria-controls="finder-results"
+          aria-autocomplete="list"
+          aria-label="Find a tab"
+          placeholder="Find a tab"
+          autocomplete="off"
+          spellcheck="false"
+          autofocus
+        />
+        <span class="finder__status" role="status" hidden></span>
+      </div>
+      <ul id="finder-results" class="finder__results" role="listbox" aria-label="Tabs" hidden></ul>
+      <p class="finder__empty" role="status" hidden></p>
+    </main>
+    <script type="module" src="/src/ui/finder/main.ts"></script>
+  </body>
+</html>

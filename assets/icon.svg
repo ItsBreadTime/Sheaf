@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- Source for public/icons/icon-{16,32,48,128}.png. Regenerate with:
+         for s in 16 32 48 128; do rsvg-convert -w $s -h $s assets/icon.svg -o public/icons/icon-$s.png; done
+       Drawn on a 16-unit grid (8 px per unit) so it stays crisp at 16, 32, 48, and 128 px.
+       Dispatch Ink tile with two tab rows, each marked by a tab-group color edge.
+       Keep the rows at least 4 units tall: thinner rows blur into a list glyph at 16 px. -->
+  <rect width="128" height="128" rx="28" fill="#1c1f25"/>
+  <!-- Faint inner edge keeps the tile visible on dark toolbars. -->
+  <rect x="2" y="2" width="124" height="124" rx="26" fill="none" stroke="#ffffff" stroke-opacity="0.14" stroke-width="4"/>
+  <g fill="#f6f5f2">
+    <rect x="24" y="24" width="80" height="32" rx="8"/>
+    <rect x="24" y="72" width="64" height="32" rx="8"/>
+  </g>
+  <path d="M32 24h24v32H32a8 8 0 0 1-8-8V32a8 8 0 0 1 8-8z" fill="#3280dd"/>
+  <path d="M32 72h24v32H32a8 8 0 0 1-8-8V80a8 8 0 0 1 8-8z" fill="#ef852e"/>
+</svg>

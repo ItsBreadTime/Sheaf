@@ -1,0 +1,73 @@
+{
+  "manifest_version": 3,
+  "name": "Sheaf",
+  "version": "0.1.0",
+  "description": "Organizes tabs into groups and auto-files new ones, finds tabs by meaning, tracks model usage, saves workspaces, offers undo.",
+  "homepage_url": "https://github.com/ItsBreadTime/Sheaf",
+  "minimum_chrome_version": "140",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "background": {
+    "service_worker": "service-worker.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "Organize current window",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png"
+    },
+    "default_popup": "action.html"
+  },
+  "permissions": [
+    "tabs",
+    "tabGroups",
+    "storage",
+    "unlimitedStorage",
+    "contextMenus",
+    "alarms",
+    "notifications",
+    "favicon"
+  ],
+  "commands": {
+    "_execute_action": {
+      "description": "Open Sheaf"
+    },
+    "organize-window": {
+      "suggested_key": { "default": "Alt+Shift+O" },
+      "description": "Organize this window"
+    },
+    "search-tabs": {
+      "suggested_key": { "default": "Alt+Shift+F" },
+      "description": "Search tabs"
+    },
+    "organize-selected-tabs": {
+      "description": "Open organizer for selected tabs"
+    },
+    "protect-selected-tabs": {
+      "description": "Protect selected tabs until browser restart"
+    },
+    "undo-last-organization": {
+      "description": "Undo the last organization"
+    },
+    "undo-last-auto-filing": {
+      "description": "Undo the last auto-filing"
+    },
+    "save-and-close-linked-window": {
+      "description": "Save and close this linked workspace window"
+    }
+  },
+  "optional_host_permissions": [
+    "https://*/*",
+    "http://localhost/*",
+    "http://127.0.0.1/*",
+    "http://[::1]/*"
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'none'"
+  }
+}
