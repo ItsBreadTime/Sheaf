@@ -184,6 +184,7 @@ export function parseSettingsBackup(text: string): SettingsImportPlan {
         semanticAlways: searchSettings.semanticAlways === true,
         semanticWhenDirectWeak: searchSettings.semanticWhenDirectWeak !== false,
         semanticIndexScope: searchSettings.semanticIndexScope === "current_window" ? "current_window" : "all_windows",
+        semanticIndexPaused: false,
       },
       ...(normalizedEmbedding ? { embeddingProvider: {
         origin: normalizedEmbedding.origin,

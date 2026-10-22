@@ -3782,8 +3782,9 @@ h1 { font-size: var(--text-lg); line-height: 1.2; letter-spacing: -0.018em; }
 
 /* Protection lives on the frame: a lock per slot, quick locks in the head. */
 .frame__title { display: flex; min-width: 0; align-items: baseline; gap: 10px; }
-.frame__locks { display: flex; flex: 0 0 auto; gap: 4px; }
-.frame__lock,
+.frame__tools { display: flex; flex: 0 0 auto; align-items: center; gap: 2px; margin-left: auto; }
+.frame__tools-divider { width: 1px; height: 16px; margin: 0 4px; background: var(--line); }
+.frame__tool,
 .slot__lock,
 .slot__manage {
   display: inline-flex;
@@ -3798,10 +3799,10 @@ h1 { font-size: var(--text-lg); line-height: 1.2; letter-spacing: -0.018em; }
   font-size: var(--text-xs);
   font-weight: 600;
 }
-.frame__lock { min-height: 28px; padding: 0 8px; }
+.frame__tool,
 .slot__lock { width: 28px; height: 28px; }
 .slot__manage { width: 28px; height: 28px; }
-.frame__lock svg,
+.frame__tool svg,
 .slot__lock svg,
 .slot__manage svg {
   width: 15px;
@@ -3812,19 +3813,25 @@ h1 { font-size: var(--text-lg); line-height: 1.2; letter-spacing: -0.018em; }
   stroke-linejoin: round;
   stroke-width: 1.8;
 }
-.frame__lock:hover:not(:disabled),
+.frame__tool:hover:not(:disabled),
 .slot__lock:hover:not(:disabled),
 .slot__manage:hover { color: var(--ink); background: var(--surface-strong); }
-.frame__lock:disabled,
+.frame__tool:disabled,
 .slot__lock:disabled { cursor: default; opacity: 0.6; }
 /* Unlocked slots keep their lock quiet until the row is in play; locked ones always show it. */
 .slot__lock:not(.slot__lock--on) { opacity: 0; }
 .slot:hover .slot__lock,
 .slot__lock:focus-visible,
 .frame:focus-within .slot__lock { opacity: 1; }
-.slot__lock--on,
-.frame__lock--on { color: var(--ink); }
+.slot__lock--on { color: var(--ink); }
+/* Header switches and locks read as on at a glance: tinted chip and accent icon.
+   Off stays a bare muted glyph (switches also get a slash). */
+.frame__tool--on { color: var(--primary); background: color-mix(in oklch, var(--primary), transparent 86%); }
+.frame__tool--on:hover:not(:disabled) { color: var(--primary-hover); background: color-mix(in oklch, var(--primary), transparent 78%); }
+.frame__tool--on:disabled { opacity: 1; color: var(--muted); background: var(--surface-strong); }
+.frame__tool[aria-disabled="true"] { cursor: default; }
 .slot--locked .slot__name { color: var(--muted); }
+
 
 /* ---- Home ---- */
 .ready__controls { margin-top: 10px; padding: 0 4px; }

@@ -49,6 +49,12 @@ export interface SearchSettings {
   semanticAlways: boolean;
   semanticWhenDirectWeak: boolean;
   semanticIndexScope: SemanticIndexScope;
+  /**
+   * Holds back embedding requests for new or changed tabs. Local bookkeeping
+   * still runs, so search keeps using the existing index; resuming sends the
+   * queued work. An explicit Build clears it.
+   */
+  semanticIndexPaused: boolean;
 }
 
 export interface EmbeddingTestResult {

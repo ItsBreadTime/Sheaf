@@ -17,7 +17,7 @@ import {
 import { semanticSourceFingerprint } from "../src/search/semantic-indexer";
 import { writePrivacySettings } from "../src/storage/organizer-state";
 import { DEFAULT_PRIVACY_SETTINGS } from "../src/storage/organizer-state";
-import { writeEmbeddingProvider, writeEmbeddingProviderTest, writeSearchSettings } from "../src/storage/search";
+import { readSearchState, writeEmbeddingProvider, writeEmbeddingProviderTest, writeSearchSettings } from "../src/storage/search";
 import { writeTabStashes } from "../src/storage/stashes";
 import { DEFAULT_SEARCH_SETTINGS } from "../src/storage/search";
 import type { SavedTabStash } from "../src/shared/stash-types";
@@ -315,6 +315,38 @@ describe("semantic index runtime orchestration", () => {
     const second = await prepareSemanticIndex(WINDOW_ID);
     expect(second).toMatchObject({ status: "complete", ready: 2, pending: 0, cacheHits: 2, cacheMisses: 0 });
     expect(provider.requests.length).toBe(requestsAfterFirstBuild);
+  });
+
+  it("holds new tabs back from the provider while paused and sends them on resume", async () => {
+    const tabs = [...baseTabs];
+    installChrome({ tabs, groups: baseGroups });
+    const { provider } = await seedEnabledSearch();
+    await prepareSemanticIndex(WINDOW_ID);
+    await settle();
+    const requestsAfterBuild = provider.requests.length;
+
+    const settings = (await readSearchState()).local.settings;
+    await writeSearchSettings({ ...settings, semanticIndexPaused: true });
+    tabs.push({ id: 14, windowId: WINDOW_ID, title: "Quarterly roadmap", url: "https://example.com/roadmap" });
+    const paused = await runSemanticIndexMaintenance();
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    expect(paused).toMatchObject({ status: "building", ready: 2, pending: 1 });
+    expect(provider.requests.length).toBe(requestsAfterBuild);
+
+    await writeSearchSettings({ ...settings, semanticIndexPaused: false });
+    await runSemanticIndexMaintenance();
+    expect(await settle()).toMatchObject({ status: "complete", ready: 3, pending: 0 });
+    expect(provider.requests.length).toBe(requestsAfterBuild + 1);
+  });
+
+  it("ends a pause when a build is requested", async () => {
+    installChrome({ tabs: baseTabs, groups: baseGroups });
+    await seedEnabledSearch();
+    await writeSearchSettings({ ...(await readSearchState()).local.settings, semanticIndexPaused: true });
+
+    await prepareSemanticIndex(WINDOW_ID);
+    expect(await settle()).toMatchObject({ status: "complete", ready: 2 });
+    expect((await readSearchState()).local.settings.semanticIndexPaused).toBe(false);
   });
 
   it("retries a rate-limited batch after its backoff and then completes", async () => {

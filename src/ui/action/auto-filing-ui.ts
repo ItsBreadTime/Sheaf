@@ -108,6 +108,11 @@ async function saveSettings(update: (settings: AutoFilingSettings) => AutoFiling
   view = view ? { ...view, settings } : await loadAutoFilingView();
 }
 
+/** The Organize view's quick switch; the rest of the settings stay as saved. */
+export async function setAutoFilingEnabled(enabled: boolean): Promise<void> {
+  await saveSettings((current) => ({ ...current, enabled }));
+}
+
 function filingDescription(entry: FilingLogEntry): string {
   if (entry.toGroupId === null) return `Left ${entry.fromGroupTitle || "its group"}`;
   const into = `Filed into ${entry.toGroupTitle || "an untitled group"}`;

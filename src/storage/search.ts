@@ -18,6 +18,7 @@ export const DEFAULT_SEARCH_SETTINGS: SearchSettings = {
   semanticAlways: false,
   semanticWhenDirectWeak: true,
   semanticIndexScope: "all_windows",
+  semanticIndexPaused: false,
 };
 
 export const DEFAULT_EMBEDDING_CONFIG: EmbeddingConfig = {
@@ -113,6 +114,7 @@ function parseLocal(value: unknown): SearchLocalState {
       semanticAlways: settings.semanticAlways === true,
       semanticWhenDirectWeak: settings.semanticWhenDirectWeak !== false,
       semanticIndexScope: settings.semanticIndexScope === "current_window" ? "current_window" : "all_windows",
+      semanticIndexPaused: settings.semanticIndexPaused === true,
     },
     embeddingConfig: parsedConfig,
     persistentApiKey: !recoveredInvalidConfig && typeof root.persistentApiKey === "string" ? root.persistentApiKey : null,

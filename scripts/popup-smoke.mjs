@@ -2271,7 +2271,7 @@ try {
   const releaseAll = action.getByRole("button", { name: "Stop protecting every tab in this window", exact: true });
   await releaseAll.waitFor();
   assert(
-    (await releaseAll.getAttribute("aria-pressed")) === "true" && (await releaseAll.textContent())?.includes("All protected"),
+    (await releaseAll.getAttribute("aria-pressed")) === "true",
     "Protect all did not switch to its pressed state once every tab was held.",
   );
   await releaseAll.click();

@@ -77,6 +77,7 @@ import {
   loadAutoFilingView,
   renderAutoFilingSuggestion,
   renderRecentlyFiled,
+  setAutoFilingEnabled,
   setAutoFilingPanelContext,
 } from "./auto-filing-ui";
 import { writeAutoFilingSettings, writeDecisionModel } from "../../storage/auto-filing";
@@ -407,7 +408,7 @@ function stopSemanticIndexPolling(): void {
 
 function startSemanticIndexPolling(): void {
   stopSemanticIndexPolling();
-  if (popupState.semanticIndexMeta.status !== "building") return;
+  if (popupState.semanticIndexMeta.status !== "building" || popupState.searchState.local.settings.semanticIndexPaused) return;
   semanticIndexPollTimer = setTimeout(() => {
     void send({ type: "semantic-index:get-state" }).then((response) => {
       if (response.semanticIndexMeta) {
@@ -1533,7 +1534,7 @@ function semanticIndexSummary(): string {
   return popupState.semanticIndexMeta.status === "idle"
     ? "Not built"
     : popupState.semanticIndexMeta.status === "building"
-      ? `${popupState.semanticIndexMeta.ready} of ${popupState.semanticIndexMeta.total} tabs ready`
+      ? `${popupState.semanticIndexMeta.ready} of ${popupState.semanticIndexMeta.total} tabs ready${popupState.searchState.local.settings.semanticIndexPaused ? " · paused" : ""}`
       : popupState.semanticIndexMeta.status === "cancelled"
         ? `Cancelled with ${popupState.semanticIndexMeta.ready} of ${popupState.semanticIndexMeta.total} tabs ready · rebuild to index the remainder`
         : popupState.semanticIndexMeta.status === "stale"
@@ -2769,7 +2770,7 @@ function slotBar(count: number, largest: number): HTMLElement {
 
 // The window as a sorting frame: one slot per group in tab-strip order, then
 // Ungrouped and Held. Counts are browser facts from the last capture.
-function renderSortingFrame(state: SemanticWindowState, title: string, limit = 6): HTMLElement {
+function renderSortingFrame(state: SemanticWindowState, title: string, tools: readonly HTMLElement[] = [], limit = 6): HTMLElement {
   const frame = element("section", "frame");
   const groups = [...state.groups].sort((left, right) => left.firstTabIndex - right.firstTabIndex);
   const ungroupedTabs = state.tabs.filter((tab) => tab.groupId === chrome.tabGroups.TAB_GROUP_ID_NONE);
@@ -2795,16 +2796,17 @@ function renderSortingFrame(state: SemanticWindowState, title: string, limit = 6
     ),
   );
   head.append(headCopy);
+  // Icon-only so the quick locks and feature switches share the title line.
+  const quick = element("div", "frame__tools");
   if (lockable) {
     // One-click locks for the two most common asks: this tab, and everything here.
-    const quick = element("div", "frame__locks");
     const activeTab = state.tabs.find((tab) => tab.active);
     const unlockedTabIds = state.tabs.filter((tab) => !userLocked(tab.protectionReasons)).map((tab) => tab.id);
     if (activeTab) {
       const activeLocked = userLocked(activeTab.protectionReasons);
       quick.append(frameLockButton(
-        activeLocked ? "Tab protected" : "Protect tab",
-        activeLocked ? `Current tab is protected: ${activeTab.title}` : `Protect the current tab until restart: ${activeTab.title}`,
+        "tab",
+      activeLocked ? `Current tab is protected: ${activeTab.title}` : `Protect the current tab until restart: ${activeTab.title}`,
         activeLocked,
         activeLocked && sessionTabs.has(activeTab.id)
           ? { release: { tabIds: [activeTab.id], groupIds: [] }, text: `${activeTab.title} can be organized again.` }
@@ -2819,7 +2821,7 @@ function renderSortingFrame(state: SemanticWindowState, title: string, limit = 6
     const release = windowSessionLocks(state);
     const releasable = release.tabIds.length + release.groupIds.length > 0;
     quick.append(frameLockButton(
-      allLocked ? "All protected" : "Protect all",
+      "window",
       allLocked
         ? releasable
           ? "Stop protecting every tab in this window"
@@ -2832,8 +2834,12 @@ function renderSortingFrame(state: SemanticWindowState, title: string, limit = 6
           ? { release, text: "Restart-only locks in this window were released." }
           : null,
     ));
-    head.append(quick);
   }
+  if (tools.length > 0) {
+    if (quick.childElementCount > 0) quick.append(element("span", "frame__tools-divider"));
+    quick.append(...tools);
+  }
+  if (quick.childElementCount > 0) head.append(quick);
   frame.append(head);
 
   const list = element("ul", "frame__slots");
@@ -2950,11 +2956,7 @@ function slotLockButton(name: string, locked: boolean, action: FrameLockAction |
       ? `Stop protecting ${name}`
       : `${name} is protected by a permanent rule. Manage protection`;
   control.setAttribute("aria-label", label);
-  control.dataset.tooltip = label;
-  control.addEventListener("mouseenter", () => showStashTabTooltip(control, label));
-  control.addEventListener("mouseleave", () => hideStashTabTooltip(control));
-  control.addEventListener("focus", () => showStashTabTooltip(control, label));
-  control.addEventListener("blur", () => hideStashTabTooltip(control));
+  withTooltip(control, label);
   control.disabled = Boolean(busyAction);
   control.append(utilityNavIcon(locked ? "lock" : "unlock"));
   control.addEventListener("click", () => {
@@ -2965,14 +2967,93 @@ function slotLockButton(name: string, locked: boolean, action: FrameLockAction |
   return control;
 }
 
-function frameLockButton(text: string, label: string, locked: boolean, action: FrameLockAction | null): HTMLButtonElement {
-  const control = element("button", `frame__lock${locked ? " frame__lock--on" : ""}`);
+// Stays for the rest of this popup once used, so switching auto-filing off
+// here doesn't take away the way to switch it back on.
+let autoFilingSwitchUsed = false;
+
+/** Quick on/off for background features that are already set up; the details stay in Settings. */
+function renderFeatureSwitches(): HTMLElement[] {
+  const filing = autoFilingView()?.settings;
+  const search = popupState.searchState.local;
+  const switches: HTMLElement[] = [];
+  if (filing && (filing.enabled || filing.decisionModel || autoFilingSwitchUsed)) {
+    switches.push(featureSwitch("auto-filing", "Auto-file new tabs into groups", filing.enabled ? "on" : "off", filing.enabled, async () => {
+      autoFilingSwitchUsed = true;
+      await setAutoFilingEnabled(!filing.enabled);
+    }));
+  }
+  if (search.settings.semanticEnabled && search.providerTest !== null && popupState.semanticIndexMeta.modelKey !== null) {
+    const on = !search.settings.semanticIndexPaused;
+    switches.push(featureSwitch("semantic-index", "Search indexing", on ? "on" : "paused", on, async () => {
+      popupState.searchState = await writeSearchSettings({ ...search.settings, semanticIndexPaused: on });
+      startSemanticIndexPolling();
+    }));
+  }
+  return switches;
+}
+
+const FEATURE_SWITCH_ICONS: Record<string, string[]> = {
+  "auto-filing": ["M4 6h6l2 2h8v10H4Z", "M8 13h7", "m12.5 10.5 2.5 2.5-2.5 2.5"],
+  "semantic-index": ["M17 10.5a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0Z", "m20 20-4.4-4.4", "m10.5 7.5.7 2.3 2.3.7-2.3.7-.7 2.3-.7-2.3-2.3-.7 2.3-.7Z"],
+};
+
+// The state a switch was just flipped to, shown while its save is in flight so
+// the icon changes on click instead of after the round trip.
+const pendingFeatureSwitches = new Map<string, boolean>();
+
+function featureSwitch(key: string, name: string, state: string, saved: boolean, toggle: () => Promise<void>): HTMLButtonElement {
+  const on = pendingFeatureSwitches.get(key) ?? saved;
+  const control = element("button", `frame__tool${on ? " frame__tool--on" : ""}`);
+  control.type = "button";
+  control.setAttribute("role", "switch");
+  control.setAttribute("aria-checked", String(on));
+  control.setAttribute("aria-label", name);
+  control.dataset.focusKey = `switch-${key}`;
+  control.dataset.actionName = `toggle-${key}`;
+  // Not disabled while busy: dimming every header tool for the length of a save
+  // read as a flash. Clicks are ignored instead.
+  if (busyAction) control.setAttribute("aria-disabled", "true");
+  // Off draws a slash through the icon, so state doesn't rest on colour alone.
+  control.append(lineIcon(on ? FEATURE_SWITCH_ICONS[key]! : [...FEATURE_SWITCH_ICONS[key]!, "M4 4l16 16"]));
+  withTooltip(control, `${name}: ${pendingFeatureSwitches.has(key) ? (on ? "on" : "off") : state}`);
+  control.addEventListener("click", () => {
+    if (busyAction) return;
+    hideStashTabTooltip(control);
+    pendingFeatureSwitches.set(key, !on);
+    void perform(`toggle-${key}`, async () => {
+      try {
+        await toggle();
+      } finally {
+        pendingFeatureSwitches.delete(key);
+      }
+    });
+  });
+  return control;
+}
+
+function withTooltip(control: HTMLButtonElement, label: string): void {
+  control.dataset.tooltip = label;
+  control.addEventListener("mouseenter", () => showStashTabTooltip(control, label));
+  control.addEventListener("mouseleave", () => hideStashTabTooltip(control));
+  control.addEventListener("focus", () => showStashTabTooltip(control, label));
+  control.addEventListener("blur", () => hideStashTabTooltip(control));
+}
+
+function frameLockButton(scope: "tab" | "window", label: string, locked: boolean, action: FrameLockAction | null): HTMLButtonElement {
+  const control = element("button", `frame__tool${locked ? " frame__tool--on" : ""}`);
   control.type = "button";
   control.setAttribute("aria-label", label);
   control.setAttribute("aria-pressed", String(locked));
-  control.disabled = Boolean(busyAction) || (locked && !action);
-  control.append(utilityNavIcon(locked ? "lock" : "unlock"), element("span", undefined, text));
+  control.dataset.focusKey = `frame-lock-${scope}`;
+  // Only a lock held by a permanent rule is disabled; runFrameLock ignores clicks while busy.
+  control.disabled = locked && !action;
+  // A lock for the one tab, a shield for the whole window.
+  control.append(scope === "tab" ? utilityNavIcon(locked ? "lock" : "unlock") : lineIcon(locked
+    ? ["M12 3 5 6v5c0 4.5 2.8 7.8 7 10 4.2-2.2 7-5.5 7-10V6Z", "m9 12 2 2 4-5"]
+    : ["M12 3 5 6v5c0 4.5 2.8 7.8 7 10 4.2-2.2 7-5.5 7-10V6Z"]));
+  withTooltip(control, label);
   control.addEventListener("click", () => {
+    hideStashTabTooltip(control);
     if (action) runFrameLock(action);
   });
   return control;
@@ -4428,7 +4509,9 @@ function renderReady(shell: HTMLElement): void {
   const filingSuggestion = busyAction === "generate" ? null : renderAutoFilingSuggestion();
   if (filingSuggestion) body.append(filingSuggestion);
   const state = popupState.viewState.editor?.capturedState;
-  if (state) body.append(renderSortingFrame(state, "This window"));
+  if (state) {
+    body.append(renderSortingFrame(state, "This window", renderFeatureSwitches()));
+  }
   const controls = element("div", "ready__controls");
   renderScopeControl(controls);
   body.append(controls);

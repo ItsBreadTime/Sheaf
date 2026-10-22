@@ -22,7 +22,7 @@ import type {
   SemanticTabRecord,
 } from "../shared/semantic-index-types";
 import { readOrganizerState } from "../storage/organizer-state";
-import { readSearchState } from "../storage/search";
+import { readSearchState, writeSearchSettings } from "../storage/search";
 import { readTabStashes } from "../storage/stashes";
 import type { SavedTabStash } from "../shared/stash-types";
 import {
@@ -164,6 +164,10 @@ export function prepareSemanticIndex(targetWindowId: number): Promise<SemanticIn
     if (activeRun) await activeRun;
     const [search, organizerData] = await Promise.all([readSearchState(), readOrganizerState()]);
     ensureIndexingEnabled(search);
+    // Asking for a build is asking for indexing, so it ends a pause.
+    if (search.local.settings.semanticIndexPaused) {
+      await writeSearchSettings({ ...search.local.settings, semanticIndexPaused: false });
+    }
     const config = combinedEmbeddingConfig(search);
     const resolvedDimensions = search.local.providerTest!.dimensions;
     const modelKey = await computeSemanticCompatibilityKey(config, indexPrivacy(search, organizerData), resolvedDimensions);
@@ -492,6 +496,11 @@ async function processSemanticIndex(): Promise<void> {
       if (meta.status !== "building") return;
       if (!search.local.settings.semanticEnabled || search.local.settings.semanticConsentAt === null) {
         await discardPendingSemanticWork({ ...meta, status: "cancelled", updatedAt: Date.now() });
+        clearResumeAlarm();
+        return;
+      }
+      // Paused: the queue stays as reconciled and is sent once indexing resumes.
+      if (search.local.settings.semanticIndexPaused) {
         clearResumeAlarm();
         return;
       }
